@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blockchain Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0e1117;
+  --panel:#161b27;
+  --panel2:#1c2333;
+  --border:#252d3d;
+  --border2:#2e3a50;
+  --text:#c9d1d9;
+  --text2:#8b949e;
+  --text3:#4a5568;
+  --accent:#3b82f6;
+  --accent-dim:rgba(59,130,246,0.12);
+  --green:#22c55e;
+  --green-dim:rgba(34,197,94,0.1);
+  --red:#ef4444;
+  --red-dim:rgba(239,68,68,0.1);
+  --orange:#f59e0b;
+  --orange-dim:rgba(245,158,11,0.1);
+  --mono:'JetBrains Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+}
+
+html,body{height:100%;overflow:hidden}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── TOP BAR ── */
+.topbar{
+  height:44px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  gap:12px;
+  flex-shrink:0;
+}
+.topbar-logo{
+  font-family:var(--mono);
+  font-size:13px;
+  font-weight:700;
+  color:#fff;
+  letter-spacing:-.3px;
+}
+.topbar-logo span{color:var(--accent)}
+.topbar-sep{width:1px;height:18px;background:var(--border);margin:0 4px}
+.topbar-round{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text2);
+}
+.topbar-round strong{color:var(--text)}
+.topbar-stats{
+  display:flex;
+  gap:6px;
+  margin-left:auto;
+  align-items:center;
+}
+.tstat{
+  padding:3px 10px;
+  border-radius:4px;
+  font-family:var(--mono);
+  font-size:11px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  color:var(--text2);
+  display:flex;
+  gap:5px;
+  align-items:center;
+}
+.tstat .val{color:var(--text);font-weight:500}
+.tstat.g .val{color:var(--green)}
+.tstat.r .val{color:var(--red)}
+.btn-reset{
+  padding:4px 12px;
+  background:transparent;
+  border:1px solid var(--border2);
+  border-radius:4px;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text2);
+  cursor:pointer;
+  transition:all .15s;
+}
+.btn-reset:hover{border-color:var(--red);color:var(--red)}
+
+/* ── LAYOUT ── */
+.app-body{
+  display:flex;
+  flex:1;
+  overflow:hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:200px;
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  flex-shrink:0;
+  overflow-y:auto;
+}
+.sidebar-section{
+  padding:12px 0 4px;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--text3);
+  padding-left:16px;
+}
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 16px;
+  font-size:13px;
+  color:var(--text2);
+  cursor:pointer;
+  border:none;
+  background:transparent;
+  width:100%;
+  text-align:left;
+  border-left:2px solid transparent;
+  transition:all .15s;
+  position:relative;
+}
+.nav-item:hover{color:var(--text);background:var(--panel2)}
+.nav-item.active{
+  color:#fff;
+  background:var(--accent-dim);
+  border-left-color:var(--accent);
+}
+.nav-item .nav-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--border2);flex-shrink:0;
+}
+.nav-item.active .nav-dot{background:var(--accent)}
+.nav-item.done .nav-dot{background:var(--green)}
+.nav-badge{
+  margin-left:auto;
+  font-family:var(--mono);
+  font-size:9px;
+  padding:1px 5px;
+  border-radius:3px;
+  background:var(--panel2);
+  color:var(--text3);
+  border:1px solid var(--border);
+}
+.nav-item.active .nav-badge{background:var(--accent-dim);color:var(--accent);border-color:var(--accent)}
+.sidebar-bottom{
+  margin-top:auto;
+  padding:12px 16px;
+  border-top:1px solid var(--border);
+}
+.sidebar-hint{
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--text3);
+  line-height:1.6;
+}
+
+/* ── MAIN CONTENT ── */
+.main{
+  flex:1;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── PAGE ── */
+.page{display:none;flex:1;overflow:hidden}
+.page.active{display:flex;flex-direction:column}
+
+/* ── PAGE HEADER ── */
+.page-header{
+  padding:16px 24px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-shrink:0;
+}
+.page-title{
+  font-size:15px;
+  font-weight:600;
+  color:#fff;
+}
+.page-sub{
+  font-size:12px;
+  color:var(--text2);
+  margin-top:2px;
+}
+.page-actions{margin-left:auto;display:flex;gap:8px}
+
+/* ── PAGE BODY ── */
+.page-body{
+  flex:1;
+  overflow-y:auto;
+  padding:20px 24px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.page-body::-webkit-scrollbar{width:4px}
+.page-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── SPLIT LAYOUT ── */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.split-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* ── PANEL ── */
+.pane{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:6px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.pane-header{
+  padding:10px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--panel2);
+}
+.pane-title{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:500;
+  color:var(--text2);
+  text-transform:uppercase;
+  letter-spacing:.8px;
+}
+.pane-body{padding:14px;flex:1;overflow-y:auto}
+.pane-body::-webkit-scrollbar{width:3px}
+.pane-body::-webkit-scrollbar-thumb{background:var(--border2)}
+.pane-foot{
+  padding:10px 14px;
+  border-top:1px solid var(--border);
+  background:var(--panel2);
+}
+
+/* ── FORM ── */
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field label{
+  display:block;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+  color:var(--text3);
+  margin-bottom:5px;
+}
+.field select,.field input{
+  width:100%;
+  background:var(--bg);
+  border:1px solid var(--border2);
+  border-radius:4px;
+  padding:7px 10px;
+  font-family:var(--sans);
+  font-size:13px;
+  color:var(--text);
+  outline:none;
+  transition:border-color .15s;
+  appearance:none;
+  -webkit-appearance:none;
+}
+.field select:focus,.field input:focus{border-color:var(--accent)}
+.field select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234a5568' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  padding-right:28px;
+}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:7px 14px;
+  border-radius:4px;
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:500;
+  cursor:pointer;
+  border:1px solid transparent;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:#2563eb}
+.btn-danger{background:var(--red-dim);color:var(--red);border-color:var(--red)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-success{background:var(--green-dim);color:var(--green);border-color:var(--green)}
+.btn-success:hover{background:var(--green);color:#000}
+.btn-ghost{background:transparent;color:var(--text2);border-color:var(--border2)}
+.btn-ghost:hover{border-color:var(--text2);color:var(--text)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-full{width:100%;text-align:center;justify-content:center}
+
+/* ── CHAIN ── */
+.chain-wrap{display:flex;flex-direction:column;gap:0;min-height:60px}
+.block{
+  border:1px solid var(--border);
+  border-radius:5px;
+  padding:10px 12px;
+  background:var(--panel2);
+  animation:slideIn .2s ease;
+  margin-bottom:2px;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.block.valid{border-left:2px solid var(--green)}
+.block.invalid{border-left:2px solid var(--red);background:var(--red-dim)}
+.block.tampered{border-left:2px solid var(--orange);background:var(--orange-dim)}
+.block-row1{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.block-num{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.block-who{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.block-amt{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff}
+.block-badge{
+  font-family:var(--mono);font-size:9px;letter-spacing:.5px;text-transform:uppercase;
+  padding:2px 6px;border-radius:3px;
+}
+.badge-valid{background:var(--green-dim);color:var(--green)}
+.badge-invalid{background:var(--red-dim);color:var(--red)}
+.badge-tampered{background:var(--orange-dim);color:var(--orange)}
+.block-row2{font-family:var(--mono);font-size:10px;color:var(--text3);word-break:break-all}
+.chain-connector{width:1px;height:8px;background:var(--border2);margin:0 0 2px 14px}
+.empty-chain{
+  font-family:var(--mono);font-size:11px;color:var(--text3);
+  padding:20px;text-align:center;border:1px dashed var(--border);border-radius:5px;
+}
+
+/* ── NODE VOTING ── */
+.node-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.node-row:last-child{border-bottom:none}
+.node-name{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.node-id{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.node-verdict{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px}
+.v-approve{color:var(--green)}
+.v-reject{color:var(--red)}
+.v-pending{color:var(--text3)}
+.vote-btns{display:flex;gap:4px}
+.vbtn{
+  padding:4px 10px;border:1px solid var(--border2);border-radius:3px;
+  background:transparent;font-family:var(--mono);font-size:10px;
+  cursor:pointer;color:var(--text2);transition:all .12s;
+}
+.vbtn.approve:hover{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.vbtn.reject:hover{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+
+/* ── PENDING BANNER ── */
+.pending{
+  background:rgba(59,130,246,.08);
+  border:1px solid rgba(59,130,246,.3);
+  border-radius:5px;padding:10px 14px;
+  display:none;margin-bottom:12px;
+}
+.pending.on{display:block;animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{border-color:rgba(59,130,246,.3)}50%{border-color:rgba(59,130,246,.7)}}
+.pending-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--accent);margin-bottom:4px;text-transform:uppercase}
+.pending-txt{font-size:13px;color:var(--text);font-weight:500}
+
+/* ── TERMINAL LOG ── */
+.log{
+  background:var(--bg);
+  border-radius:4px;
+  padding:10px 12px;
+  font-family:var(--mono);
+  font-size:11px;
+  line-height:1.8;
+  max-height:160px;
+  overflow-y:auto;
+  border:1px solid var(--border);
+}
+.log::-webkit-scrollbar{width:3px}
+.log::-webkit-scrollbar-thumb{background:var(--border2)}
+.log-line{color:var(--text3);padding:1px 0}
+.log-line .ts{color:var(--text3);margin-right:6px}
+.log-line .prompt{color:var(--accent);margin-right:4px}
+.log-line.ok .msg{color:var(--green)}
+.log-line.err .msg{color:var(--red)}
+.log-line.warn .msg{color:var(--orange)}
+.log-line .msg{color:var(--text2)}
+
+/* ── CONTRACT ── */
+.contract{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:5px;
+  padding:14px 16px;
+  font-family:var(--mono);
+  font-size:12px;
+  line-height:2;
+}
+.ck{color:var(--accent)}
+.cv{color:#fff}
+.co{color:var(--green)}
+.ce{color:var(--red)}
+.cc{color:var(--text3)}
+
+/* ── ROLES TABLE ── */
+.rtable{width:100%;border-collapse:collapse}
+.rtable th{
+  font-family:var(--mono);font-size:10px;letter-spacing:.8px;text-transform:uppercase;
+  color:var(--text3);text-align:left;padding:8px 12px;
+  border-bottom:1px solid var(--border2);
+}
+.rtable td{
+  padding:11px 12px;border-bottom:1px solid var(--border);
+  font-size:13px;color:var(--text2);vertical-align:top;
+}
+.rtable tr:last-child td{border-bottom:none}
+.rtable tr:hover td{background:var(--panel2)}
+.rname{font-weight:600;color:var(--text);white-space:nowrap}
+.rtag{
+  font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;
+  background:var(--panel2);border:1px solid var(--border2);color:var(--text3);
+  margin-left:6px;vertical-align:middle;
+}
+
+/* ── ID CARDS ── */
+.id-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.id-card{
+  background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:12px 14px;
+}
+.id-card.verified{border-top:2px solid var(--green)}
+.id-card.unverified{border-top:2px solid var(--red)}
+.id-card-label{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
+.id-card-status{
+  font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;
+}
+.id-card.verified .id-card-status{color:var(--green)}
+.id-card.unverified .id-card-status{color:var(--red)}
+.id-card p{font-size:12px;color:var(--text2);line-height:1.5;margin:0}
+
+/* ── DEBRIEF ── */
+.q-item{
+  background:var(--panel2);border:1px solid var(--border);border-radius:5px;
+  margin-bottom:8px;overflow:hidden;
+}
+.q-head{
+  padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--border);
+  font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.5px;
+  display:flex;gap:10px;align-items:center;
+}
+.q-head .q-round{color:var(--accent)}
+.q-body{padding:12px 14px;font-size:13px;color:var(--text);line-height:1.65}
+
+/* ── OVERVIEW ── */
+.info-row{
+  background:var(--panel);border:1px solid var(--border);border-radius:5px;
+  padding:12px 16px;display:flex;gap:12px;align-items:flex-start;
+}
+.info-row .info-num{
+  font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);
+  width:28px;flex-shrink:0;
+}
+.info-row .info-text{font-size:13px;color:var(--text2);line-height:1.6}
+.info-row .info-text strong{color:var(--text)}
+
+.metric-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+}
+.metric{
+  background:var(--panel);border:1px solid var(--border);border-radius:5px;
+  padding:14px;
+}
+.metric-val{font-family:var(--mono);font-size:22px;font-weight:700;color:#fff;line-height:1}
+.metric-val.g{color:var(--green)}
+.metric-val.r{color:var(--red)}
+.metric-lbl{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+
+.round-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:14px 16px;
+}
+.round-card h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.round-card p{font-size:12px;color:var(--text2);line-height:1.55;margin:0}
+
+.section-label{
+  font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--text3);margin-bottom:8px;
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">chain<span>sim</span></div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-round">Active round: <strong id="tb-round">—</strong></div>
+  <div class="topbar-stats">
+    <div class="tstat"><span>TX</span><span class="val" id="ts-total">0</span></div>
+    <div class="tstat g"><span>approved</span><span class="val" id="ts-valid">0</span></div>
+    <div class="tstat r"><span>rejected</span><span class="val" id="ts-blocked">0</span></div>
+    <div class="tstat g"><span>aid out</span><span class="val" id="ts-aid">$0</span></div>
+    <button class="btn-reset" onclick="resetAll()">reset all</button>
+  </div>
+</div>
+
+<!-- APP BODY -->
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">Navigation</div>
+    <button class="nav-item active" onclick="goPage('overview')" id="ni-overview">
+      <div class="nav-dot"></div> Overview
+    </button>
+    <button class="nav-item" onclick="goPage('roles')" id="ni-roles">
+      <div class="nav-dot"></div> Roles
+    </button>
+
+    <div class="sidebar-section" style="margin-top:8px">Simulation</div>
+    <button class="nav-item" onclick="goPage('r1')" id="ni-r1">
+      <div class="nav-dot"></div> Round 1
+      <span class="nav-badge">Centralized</span>
+    </button>
+    <button class="nav-item" onclick="goPage('r2')" id="ni-r2">
+      <div class="nav-dot"></div> Round 2
+      <span class="nav-badge">Blockchain</span>
+    </button>
+    <button class="nav-item" onclick="goPage('r3')" id="ni-r3">
+      <div class="nav-dot"></div> Round 3
+      <span class="nav-badge">Contract</span>
+    </button>
+    <button class="nav-item" onclick="goPage('debrief')" id="ni-debrief">
+      <div class="nav-dot"></div> Debrief
+    </button>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-hint">2/3 node majority<br>required for consensus</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ══ OVERVIEW ══ -->
+    <div class="page active" id="page-overview">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Blockchain Social Impact Simulator</div>
+          <div class="page-sub">Humanitarian aid distribution — three-round simulation</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="goPage('roles')">Get started</button>
+        </div>
+      </div>
+      <div class="page-body">
+
+        <div class="metric-row">
+          <div class="metric"><div class="metric-val" id="ov-total">0</div><div class="metric-lbl">Total Transactions</div></div>
+          <div class="metric"><div class="metric-val g" id="ov-valid">0</div><div class="metric-lbl">Approved</div></div>
+          <div class="metric"><div class="metric-val r" id="ov-blocked">0</div><div class="metric-lbl">Rejected</div></div>
+          <div class="metric"><div class="metric-val g" id="ov-aid">$0</div><div class="metric-lbl">Aid Delivered</div></div>
+        </div>
+
+        <div class="section-label">Scenario</div>
+        <div class="info-row">
+          <div class="info-text">An NGO is delivering food and medical aid to displaced persons in a conflict zone. Funds are disappearing, beneficiary identities can't be verified, and there's no agreed record of who received what. Run through three rounds to see how blockchain changes this.</div>
+        </div>
+
+        <div class="section-label">How to run it</div>
+        <div class="info-row"><div class="info-num">1</div><div class="info-text">Go to <strong>Roles</strong> and assign each student or group their role before anything else.</div></div>
+        <div class="info-row"><div class="info-num">2</div><div class="info-text"><strong>Round 1 — Centralized.</strong> Submit some transactions. Let the Bad Actor tamper. Watch the Auditor struggle.</div></div>
+        <div class="info-row"><div class="info-num">3</div><div class="info-text"><strong>Round 2 — Blockchain.</strong> Now every transaction needs node consensus. Try the same tamper — the chain hash mismatch is detected automatically.</div></div>
+        <div class="info-row"><div class="info-num">4</div><div class="info-text"><strong>Round 3 — Smart Contract.</strong> Automated rules block unverified IDs and suspicious purposes before reaching the nodes at all.</div></div>
+        <div class="info-row"><div class="info-num">5</div><div class="info-text">End on <strong>Debrief</strong> — six questions to close the session.</div></div>
+
+        <div class="split-3">
+          <div class="round-card"><h4>Round 1 — Centralized</h4><p>Single coordinator. No checks. Bad Actor can alter records silently. Auditor is almost always too late.</p></div>
+          <div class="round-card"><h4>Round 2 — Blockchain</h4><p>Every transaction broadcasts to all nodes. 2 of 3 must approve. Tampering breaks the chain hash.</p></div>
+          <div class="round-card"><h4>Round 3 — Smart Contract</h4><p>Automated rules enforce verified IDs and legitimate purposes before a transaction even reaches the nodes.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ROLES ══ -->
+    <div class="page" id="page-roles">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Roles</div>
+          <div class="page-sub">Assign before starting Round 1</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="goPage('r1')">Start Round 1</button>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="pane">
+          <div class="pane-header"><span class="pane-title">Role Assignments</span></div>
+          <div class="pane-body" style="padding:0">
+            <table class="rtable">
+              <thead><tr><th>Role</th><th>Responsibility</th><th>Size</th></tr></thead>
+              <tbody>
+                <tr><td><span class="rname">Donor</span><span class="rtag">submits</span></td><td>Decides amount and beneficiary. Watches to see if funds arrive.</td><td>1–2</td></tr>
+                <tr><td><span class="rname">NGO Coordinator</span><span class="rtag">submits</span></td><td>Fills in transaction details and submits on behalf of the donor.</td><td>1–2</td></tr>
+                <tr><td><span class="rname">Node Alpha</span><span class="rtag">votes</span></td><td>Receives every transaction. Votes approve or reject independently.</td><td>1–3</td></tr>
+                <tr><td><span class="rname">Node Beta</span><span class="rtag">votes</span></td><td>Second independent node. 2 of 3 nodes must agree before a block is recorded.</td><td>1–3</td></tr>
+                <tr><td><span class="rname">Node Gamma</span><span class="rtag">votes</span></td><td>Try making this node hostile in Round 2 — see if two honest nodes still reach consensus.</td><td>1–3</td></tr>
+                <tr><td><span class="rname">Beneficiary</span><span class="rtag">receives</span></td><td>Holds a digital ID — verified or not. ID determines Round 3 acceptance.</td><td>2–4</td></tr>
+                <tr><td><span class="rname">Bad Actor</span><span class="rtag">attacks</span></td><td>Tries to submit fraudulent transactions or tamper with records. Works in Round 1. Fails in 2 and 3.</td><td>1–2</td></tr>
+                <tr><td><span class="rname">Auditor</span><span class="rtag">reviews</span></td><td>Reviews the ledger after each round. Round 1: hard. Round 2: trivial.</td><td>1–2</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section-label">Beneficiary ID Cards</div>
+        <div class="id-cards">
+          <div class="id-card verified"><div class="id-card-label">REF-001</div><div class="id-card-status">Verified</div><p>Passes all checks in every round.</p></div>
+          <div class="id-card verified"><div class="id-card-label">REF-002</div><div class="id-card-status">Verified</div><p>Second verified beneficiary. Also passes all checks.</p></div>
+          <div class="id-card unverified"><div class="id-card-label">REF-999</div><div class="id-card-status">Unverified</div><p>Smart contract auto-rejects any transaction to this ID in Round 3.</p></div>
+          <div class="id-card unverified"><div class="id-card-label">REF-000</div><div class="id-card-status">Fake — Bad Actor</div><p>Always rejected in Round 3 regardless of purpose or node votes.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ROUND 1 ══ -->
+    <div class="page" id="page-r1">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Round 1 — Centralized Ledger</div>
+          <div class="page-sub">No validation. Single coordinator. Bad Actor can tamper freely.</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost" onclick="goPage('roles')">Roles</button>
+          <button class="btn btn-primary" onclick="goPage('r2')">Next round</button>
+        </div>
+      </div>
+      <div class="page-body" style="display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start">
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Submit Transaction</span></div>
+            <div class="pane-body">
+              <div class="field"><label>Role</label><select id="r1-role"><option>Donor</option><option>NGO Coordinator</option><option>Bad Actor</option></select></div>
+              <div class="field"><label>Beneficiary ID</label><select id="r1-ben"><option>REF-001 (Verified)</option><option>REF-002 (Verified)</option><option>REF-999 (Unverified)</option><option>REF-000 (Fake)</option></select></div>
+              <div class="field"><label>Amount (USD)</label><input type="number" id="r1-amount" value="500" min="1"></div>
+              <div class="field"><label>Purpose</label><select id="r1-purpose"><option>Food Aid</option><option>Medical Supplies</option><option>Shelter</option><option>Education</option><option>Personal Transfer</option></select></div>
+            </div>
+            <div class="pane-foot">
+              <div class="btn-row">
+                <button class="btn btn-primary" style="flex:1" onclick="r1Submit()">Submit</button>
+                <button class="btn btn-danger" onclick="r1Tamper()">Tamper</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Log</span></div>
+            <div class="pane-body" style="padding:0">
+              <div class="log" id="r1-log" style="border:none;border-radius:0;max-height:120px">
+                <div class="log-line"><span class="ts">&gt;</span><span class="prompt"></span><span class="msg">Round 1 initialized</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pane" style="min-height:300px">
+          <div class="pane-header"><span class="pane-title">Centralized Ledger</span></div>
+          <div class="pane-body">
+            <div class="chain-wrap" id="r1-chain">
+              <div class="empty-chain">No transactions yet</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ ROUND 2 ══ -->
+    <div class="page" id="page-r2">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Round 2 — Blockchain Consensus</div>
+          <div class="page-sub">2 of 3 nodes must approve. Tampering breaks the chain hash.</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost" onclick="goPage('r1')">Round 1</button>
+          <button class="btn btn-primary" onclick="goPage('r3')">Next round</button>
+        </div>
+      </div>
+      <div class="page-body" style="display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start">
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Submit Transaction</span></div>
+            <div class="pane-body">
+              <div class="field"><label>Role</label><select id="r2-role"><option>Donor</option><option>NGO Coordinator</option><option>Bad Actor</option></select></div>
+              <div class="field"><label>Beneficiary ID</label><select id="r2-ben"><option>REF-001 (Verified)</option><option>REF-002 (Verified)</option><option>REF-999 (Unverified)</option><option>REF-000 (Fake)</option></select></div>
+              <div class="field"><label>Amount (USD)</label><input type="number" id="r2-amount" value="500" min="1"></div>
+              <div class="field"><label>Purpose</label><select id="r2-purpose"><option>Food Aid</option><option>Medical Supplies</option><option>Shelter</option><option>Education</option><option>Personal Transfer</option></select></div>
+            </div>
+            <div class="pane-foot">
+              <div class="btn-row">
+                <button class="btn btn-primary" style="flex:1" onclick="r2Submit()">Broadcast</button>
+                <button class="btn btn-danger" onclick="r2Tamper()">Tamper</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Node Consensus</span></div>
+            <div class="pane-body">
+              <div class="pending" id="r2-pending">
+                <div class="pending-lbl">Awaiting votes</div>
+                <div class="pending-txt" id="r2-pending-txt"></div>
+              </div>
+              <div id="r2-nodes"></div>
+            </div>
+            <div class="pane-foot">
+              <button class="btn btn-success btn-full" onclick="r2Finalize()">Finalize consensus</button>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Log</span></div>
+            <div class="pane-body" style="padding:0">
+              <div class="log" id="r2-log" style="border:none;border-radius:0;max-height:100px">
+                <div class="log-line"><span class="ts">&gt;</span><span class="msg">Round 2 initialized</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pane" style="min-height:300px">
+          <div class="pane-header"><span class="pane-title">Blockchain Ledger</span></div>
+          <div class="pane-body">
+            <div class="chain-wrap" id="r2-chain"><div class="empty-chain">No transactions yet</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ ROUND 3 ══ -->
+    <div class="page" id="page-r3">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Round 3 — Smart Contract</div>
+          <div class="page-sub">Contract enforces rules automatically before nodes vote.</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost" onclick="goPage('r2')">Round 2</button>
+          <button class="btn btn-primary" onclick="goPage('debrief')">Debrief</button>
+        </div>
+      </div>
+      <div class="page-body" style="display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start">
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Smart Contract</span></div>
+            <div class="pane-body" style="padding:10px">
+              <div class="contract">
+                <div class="cc">// Aid release conditions</div>
+                <div><span class="ck">IF</span>   beneficiary == <span class="cv">VERIFIED</span></div>
+                <div><span class="ck">AND</span>  purpose != <span class="cv">"Personal Transfer"</span></div>
+                <div><span class="ck">AND</span>  nodes >= <span class="cv">2/3</span> approve</div>
+                <div><span class="ck">THEN</span> <span class="co">release_aid()</span></div>
+                <div><span class="ck">ELSE</span> <span class="ce">reject(reason)</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Submit Transaction</span></div>
+            <div class="pane-body">
+              <div class="field"><label>Role</label><select id="r3-role"><option>Donor</option><option>NGO Coordinator</option><option>Bad Actor</option></select></div>
+              <div class="field"><label>Beneficiary ID</label><select id="r3-ben"><option>REF-001 (Verified)</option><option>REF-002 (Verified)</option><option>REF-999 (Unverified)</option><option>REF-000 (Fake)</option></select></div>
+              <div class="field"><label>Amount (USD)</label><input type="number" id="r3-amount" value="500" min="1"></div>
+              <div class="field"><label>Purpose</label><select id="r3-purpose"><option>Food Aid</option><option>Medical Supplies</option><option>Shelter</option><option>Education</option><option>Personal Transfer</option></select></div>
+            </div>
+            <div class="pane-foot">
+              <button class="btn btn-primary btn-full" onclick="r3Submit()">Run contract</button>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Node Consensus</span></div>
+            <div class="pane-body">
+              <div class="pending" id="r3-pending">
+                <div class="pending-lbl">Contract passed — awaiting votes</div>
+                <div class="pending-txt" id="r3-pending-txt"></div>
+              </div>
+              <div id="r3-nodes"></div>
+            </div>
+            <div class="pane-foot">
+              <button class="btn btn-success btn-full" onclick="r3Finalize()">Finalize consensus</button>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Log</span></div>
+            <div class="pane-body" style="padding:0">
+              <div class="log" id="r3-log" style="border:none;border-radius:0;max-height:100px">
+                <div class="log-line"><span class="ts">&gt;</span><span class="msg">Round 3 initialized</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pane" style="min-height:300px">
+          <div class="pane-header"><span class="pane-title">Blockchain Ledger</span></div>
+          <div class="pane-body">
+            <div class="chain-wrap" id="r3-chain"><div class="empty-chain">No transactions yet</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ DEBRIEF ══ -->
+    <div class="page" id="page-debrief">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Debrief</div>
+          <div class="page-sub">Discussion questions — draw from what the class experienced</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-danger" onclick="resetAll();goPage('overview')">Reset &amp; restart</button>
+        </div>
+      </div>
+      <div class="page-body">
+
+        <div class="metric-row">
+          <div class="metric"><div class="metric-val" id="db-total">0</div><div class="metric-lbl">Total Transactions</div></div>
+          <div class="metric"><div class="metric-val g" id="db-valid">0</div><div class="metric-lbl">Approved</div></div>
+          <div class="metric"><div class="metric-val r" id="db-blocked">0</div><div class="metric-lbl">Rejected</div></div>
+          <div class="metric"><div class="metric-val g" id="db-aid">$0</div><div class="metric-lbl">Aid Delivered</div></div>
+        </div>
+
+        <div class="section-label">Round 1 — Centralized</div>
+        <div class="q-item"><div class="q-head"><span class="q-round">R1</span> Q1</div><div class="q-body">When the Bad Actor tampered with the ledger, who noticed — and when? What would have happened if there was no Auditor watching at all?</div></div>
+        <div class="q-item"><div class="q-head"><span class="q-round">R1</span> Q2</div><div class="q-body">In real humanitarian aid delivery, which organizations play the role of the single coordinator? What are the risks of giving any one actor that level of unchecked control over the ledger?</div></div>
+
+        <div class="section-label">Round 2 — Blockchain</div>
+        <div class="q-item"><div class="q-head"><span class="q-round">R2</span> Q3</div><div class="q-body">Why couldn't the Bad Actor tamper successfully in Round 2? What specifically broke — and how did the system detect it without any human auditor being involved?</div></div>
+        <div class="q-item"><div class="q-head"><span class="q-round">R2</span> Q4</div><div class="q-body">We used 3 nodes and required 2 to agree. What happens if one node is dishonest? What if two nodes collude? At what point does the consensus model actually fail?</div></div>
+
+        <div class="section-label">Round 3 — Smart Contract</div>
+        <div class="q-item"><div class="q-head"><span class="q-round">R3</span> Q5</div><div class="q-body">The smart contract auto-rejected transactions with unverified IDs. But who wrote those rules? Who can update them — and what happens if the rules themselves are biased against certain populations?</div></div>
+        <div class="q-item"><div class="q-head"><span class="q-round">R3</span> Q6</div><div class="q-body">Think about BanQu's refugee identity model. How would you adapt this three-round simulation for East Africa? Which round best represents what BanQu actually does — and what is still missing from our model?</div></div>
+
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app-body -->
+
+<script>
+const NODES=[{id:'A',name:'Node Alpha',sub:'Peer 1/3'},{id:'B',name:'Node Beta',sub:'Peer 2/3'},{id:'G',name:'Node Gamma',sub:'Peer 3/3'}];
+const PAGES=['overview','roles','r1','r2','r3','debrief'];
+const ROUND_NAMES={overview:'—',roles:'—',r1:'Round 1 — Centralized',r2:'Round 2 — Blockchain',r3:'Round 3 — Smart Contract',debrief:'Debrief'};
+
+const state={
+  stats:{total:0,valid:0,blocked:0,tampered:0,aid:0},
+  r1:{blocks:[],n:0},
+  r2:{blocks:[],n:0,pending:null,votes:{}},
+  r3:{blocks:[],n:0,pending:null,votes:{}},
+};
+
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('ni-'+id).classList.add('active');
+  document.getElementById('tb-round').textContent=ROUND_NAMES[id];
+  if(id==='debrief')syncDebrief();
+}
+
+function fakeHash(s){
+  let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;
+  return'0x'+Math.abs(h).toString(16).padStart(8,'0')+Math.random().toString(16).slice(2,10);
+}
+
+function ts(){return new Date().toLocaleTimeString('en-US',{hour12:false})}
+
+function log(id,msg,type=''){
+  const el=document.getElementById(id);
+  const d=document.createElement('div');
+  d.className='log-line '+(type||'');
+  d.innerHTML=`<span class="ts">[${ts()}]</span> <span class="msg">${msg}</span>`;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+
+function updateTopbar(){
+  document.getElementById('ts-total').textContent=state.stats.total;
+  document.getElementById('ts-valid').textContent=state.stats.valid;
+  document.getElementById('ts-blocked').textContent=state.stats.blocked;
+  document.getElementById('ts-aid').textContent='$'+state.stats.aid.toLocaleString();
+  // overview metrics
+  ['total','valid','blocked'].forEach(k=>{
+    const el=document.getElementById('ov-'+k);
+    if(el)el.textContent=state.stats[k];
+  });
+  const oa=document.getElementById('ov-aid');
+  if(oa)oa.textContent='$'+state.stats.aid.toLocaleString();
+}
+
+function syncDebrief(){
+  document.getElementById('db-total').textContent=state.stats.total;
+  document.getElementById('db-valid').textContent=state.stats.valid;
+  document.getElementById('db-blocked').textContent=state.stats.blocked;
+  document.getElementById('db-aid').textContent='$'+state.stats.aid.toLocaleString();
+}
+
+function renderChain(id,blocks){
+  const el=document.getElementById(id);
+  if(!blocks.length){el.innerHTML='<div class="empty-chain">No transactions yet</div>';return;}
+  el.innerHTML=blocks.map((b,i)=>`
+    ${i>0?'<div class="chain-connector"></div>':''}
+    <div class="block ${b.status}">
+      <div class="block-row1">
+        <span class="block-num">#${b.id}</span>
+        <span class="block-who">${b.role} → ${b.ben}</span>
+        <span class="block-amt">$${b.amount}</span>
+        <span class="block-badge badge-${b.status}">${b.status}</span>
+      </div>
+      <div class="block-row2">${b.purpose} &nbsp;|&nbsp; prev:${b.prev.slice(0,16)}... hash:${b.hash.slice(0,16)}...</div>
+    </div>`).join('');
+}
+
+function renderNodes(bodyId,votes,round){
+  const el=document.getElementById(bodyId);if(!el)return;
+  el.innerHTML=NODES.map(n=>{
+    const v=votes[n.id];
+    const cls=v==='approve'?'v-approve':v==='reject'?'v-reject':'v-pending';
+    const txt=v==='approve'?'APPROVED':v==='reject'?'REJECTED':'PENDING';
+    return`<div class="node-row">
+      <div><div class="node-name">${n.name}</div><div class="node-id">${n.sub}</div></div>
+      <div class="node-verdict ${cls}">${txt}</div>
+      ${!v?`<div class="vote-btns">
+        <button class="vbtn approve" onclick="castVote('${round}','${n.id}','approve')">approve</button>
+        <button class="vbtn reject" onclick="castVote('${round}','${n.id}','reject')">reject</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function castVote(round,nid,dec){
+  state[round].votes[nid]=dec;
+  renderNodes(round+'-nodes',state[round].votes,round);
+  log(round+'-log',`${NODES.find(n=>n.id===nid).name}: ${dec.toUpperCase()}`);
+}
+
+function addBlock(rk,tx,status){
+  const r=state[rk];r.n++;
+  const prev=r.blocks.length?r.blocks[r.blocks.length-1].hash:'0x00000000genesis';
+  r.blocks.push({id:r.n,...tx,status,prev,hash:fakeHash(JSON.stringify(tx)+Date.now())});
+  state.stats.total++;
+  if(status==='valid'){state.stats.valid++;state.stats.aid+=tx.amount;}
+  if(status==='invalid')state.stats.blocked++;
+  if(status==='tampered')state.stats.tampered++;
+  renderChain(rk+'-chain',r.blocks);
+  updateTopbar();
+}
+
+function getTx(p){
+  return{
+    role:document.getElementById(p+'-role').value,
+    ben:document.getElementById(p+'-ben').value,
+    amount:parseInt(document.getElementById(p+'-amount').value)||500,
+    purpose:document.getElementById(p+'-purpose').value,
+  };
+}
+
+// R1
+function r1Submit(){const tx=getTx('r1');addBlock('r1',tx,'valid');log('r1-log',`${tx.role} → $${tx.amount} to ${tx.ben}  [${tx.purpose}]`,'ok');}
+function r1Tamper(){const tx=getTx('r1');tx.role='Bad Actor';addBlock('r1',tx,'tampered');log('r1-log','Bad Actor tampered record — accepted without rejection','err');}
+
+// R2
+function r2Submit(){
+  const tx=getTx('r2');state.r2.pending=tx;state.r2.votes={};
+  document.getElementById('r2-pending').classList.add('on');
+  document.getElementById('r2-pending-txt').textContent=`${tx.role} — $${tx.amount} to ${tx.ben}`;
+  renderNodes('r2-nodes',{},'r2');
+  log('r2-log',`Broadcast: $${tx.amount} to ${tx.ben} — awaiting votes`,'warn');
+}
+function r2Tamper(){
+  addBlock('r2',{role:'Bad Actor',ben:'CHAIN',amount:0,purpose:'Tamper'},'invalid');
+  log('r2-log','Tamper detected — hash mismatch. Rejected by network.','err');
+}
+function r2Finalize(){
+  if(!state.r2.pending){log('r2-log','No pending transaction','err');return;}
+  const vs=Object.values(state.r2.votes);
+  if(vs.length<2){log('r2-log','Need at least 2 votes first','err');return;}
+  const ok=vs.filter(v=>v==='approve').length;
+  addBlock('r2',state.r2.pending,ok>=2?'valid':'invalid');
+  log('r2-log',ok>=2?`Consensus: ${ok}/3 approve — block added`:`Consensus failed: ${ok}/3 — rejected`,ok>=2?'ok':'err');
+  state.r2.pending=null;state.r2.votes={};
+  document.getElementById('r2-pending').classList.remove('on');
+  renderNodes('r2-nodes',{},'r2');
+}
+
+// R3
+function r3Submit(){
+  const tx=getTx('r3');
+  const ver=tx.ben.includes('Verified');
+  const sus=tx.purpose==='Personal Transfer';
+  if(!ver||sus){
+    addBlock('r3',tx,'invalid');
+    log('r3-log',`Contract rejected: ${!ver?'ID not verified':'suspicious purpose'}. Nodes never reached.`,'err');
+    return;
+  }
+  state.r3.pending=tx;state.r3.votes={};
+  document.getElementById('r3-pending').classList.add('on');
+  document.getElementById('r3-pending-txt').textContent=`$${tx.amount} to ${tx.ben}`;
+  renderNodes('r3-nodes',{},'r3');
+  log('r3-log','Contract conditions met — awaiting node consensus','warn');
+}
+function r3Finalize(){
+  if(!state.r3.pending){log('r3-log','No pending transaction','err');return;}
+  const vs=Object.values(state.r3.votes);
+  if(vs.length<2){log('r3-log','Need at least 2 votes','err');return;}
+  const ok=vs.filter(v=>v==='approve').length;
+  addBlock('r3',state.r3.pending,ok>=2?'valid':'invalid');
+  log('r3-log',ok>=2?`${ok}/3 approve — aid released`:`${ok}/3 — rejected`,ok>=2?'ok':'err');
+  state.r3.pending=null;state.r3.votes={};
+  document.getElementById('r3-pending').classList.remove('on');
+  renderNodes('r3-nodes',{},'r3');
+}
+
+// Reset
+function resetAll(){
+  state.stats={total:0,valid:0,blocked:0,tampered:0,aid:0};
+  ['r1','r2','r3'].forEach(r=>{
+    state[r]={blocks:[],n:0,pending:null,votes:{}};
+    const c=document.getElementById(r+'-chain');
+    if(c)c.innerHTML='<div class="empty-chain">No transactions yet</div>';
+    const l=document.getElementById(r+'-log');
+    if(l)l.innerHTML=`<div class="log-line"><span class="ts">&gt;</span><span class="msg">Reset</span></div>`;
+    const pb=document.getElementById(r+'-pending');
+    if(pb)pb.classList.remove('on');
+    renderNodes(r+'-nodes',{},r);
+  });
+  updateTopbar();
+}
+
+// Init
+renderNodes('r2-nodes',{},'r2');
+renderNodes('r3-nodes',{},'r3');
+updateTopbar();
+</script>
+</body>
+</html>
